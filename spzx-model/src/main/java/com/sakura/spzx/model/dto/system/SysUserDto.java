@@ -1,19 +1,23 @@
 package com.sakura.spzx.model.dto.system;
 
+import com.sakura.spzx.model.dto.common.PageDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-
-import java.io.Serializable;
+import lombok.EqualsAndHashCode;
 
 @Data
 @Schema(description = "请求参数实体类")
-public class SysUserDto {
+@EqualsAndHashCode(callSuper = true)
+public class SysUserDto extends PageDto {
 
     @Schema(description = "搜索关键字")
-    private String keyword ;
+    private String keywords;
+
+    @Schema(description = "用户状态：1-正常，0-停用")
+    private Integer status;
 
     @Schema(description = "开始时间")
-    private String createTimeBegin ;
+    private String createTimeBegin;
 
     @Schema(description = "结束时间")
     private String createTimeEnd;

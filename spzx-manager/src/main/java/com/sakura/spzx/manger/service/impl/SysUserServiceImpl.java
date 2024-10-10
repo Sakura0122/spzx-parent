@@ -1,10 +1,26 @@
 package com.sakura.spzx.manger.service.impl;
 
+import cn.hutool.captcha.CaptchaUtil;
+import cn.hutool.captcha.LineCaptcha;
+import cn.hutool.captcha.ShearCaptcha;
+import cn.hutool.captcha.generator.RandomGenerator;
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.OrderItem;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.sakura.spzx.model.dto.system.SysUserDto;
+import com.sakura.spzx.model.vo.common.PageVo;
+import com.sakura.spzx.model.vo.system.SysUserVo;
+import com.sakura.spzx.model.vo.system.UserInfoVo;
+import com.sakura.spzx.model.vo.system.ValidateCodeVo;
+import com.sakura.spzx.service.constant.RedisConstant;
 import com.sakura.spzx.service.exception.SakuraException;
 import com.sakura.spzx.manger.mapper.SysUserMapper;
 import com.sakura.spzx.manger.service.SysUserService;
@@ -16,6 +32,9 @@ import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.awt.*;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -44,17 +63,23 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
             throw new SakuraException(ResultCodeEnum.LOGIN_ERROR);
         }
 
-        // 2.校验密码
+        // 2.1 校验密码
         String md5Password = SecureUtil.md5(password);
         if (!md5Password.equals(sysUser.getPassword())) {
             throw new SakuraException(ResultCodeEnum.LOGIN_ERROR);
         }
 
+        // 2.2 校验验证码
+        if (!captcha.equalsIgnoreCase(redisTemplate.opsForValue().get(RedisConstant.USER_LOGIN_TOKEN_KEY + codeKey))) {
+            throw new SakuraException(ResultCodeEnum.VALIDATE_CODE_ERROR);
+        }
+        redisTemplate.delete(RedisConstant.USER_LOGIN_TOKEN_KEY + codeKey);
+
         // 3.生成token
         String uuid = IdUtil.simpleUUID();
 
         // 4.存储到redis
-        redisTemplate.opsForValue().set("login:token:" + uuid, JSONUtil.toJsonStr(sysUser), 30, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(RedisConstant.USER_LOGIN_TOKEN + uuid, JSONUtil.toJsonStr(sysUser), RedisConstant.USER_LOGIN_TOKEN_TIMEOUT, TimeUnit.SECONDS);
 
         // 5.封装数据响应
         // StpUtil.login(sysUser.getId());
@@ -63,6 +88,74 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         loginVo.setToken(uuid);
         loginVo.setRefresh_token("");
         return loginVo;
+    }
+
+    @Override
+    public ValidateCodeVo validateCode() {
+        // 1.生成key
+        String codeKey = IdUtil.simpleUUID();
+
+        // 2.生成验证码
+        RandomGenerator randomGenerator = new RandomGenerator("0123456789", 4);
+        LineCaptcha lineCaptcha = CaptchaUtil.createLineCaptcha(200, 80, 4, 4);
+        lineCaptcha.setBackground(new Color(0, 187, 255));
+        lineCaptcha.setGenerator(randomGenerator);
+
+        // 3.验证码转base64
+        String codeValue = lineCaptcha.getImageBase64();
+
+        // 4.存储到redis中
+        redisTemplate.opsForValue().set(RedisConstant.USER_LOGIN_TOKEN_KEY + codeKey, lineCaptcha.getCode(), RedisConstant.USER_LOGIN_CODE_TIMEOUT, TimeUnit.SECONDS);
+
+        // 5.封装数据响应
+        ValidateCodeVo validateCodeVo = new ValidateCodeVo();
+        validateCodeVo.setCodeKey(codeKey);
+        validateCodeVo.setCodeValue("data:image/png;base64," + codeValue);
+        return validateCodeVo;
+    }
+
+    @Override
+    public UserInfoVo info(String token) {
+        // 1.获取用户信息
+        String json = redisTemplate.opsForValue().get(RedisConstant.USER_LOGIN_TOKEN + token);
+        if (StrUtil.isBlank(json)) {
+            throw new SakuraException(ResultCodeEnum.LOGIN_AUTH);
+        }
+
+        // 2.将json转为User对象
+        SysUser sysUser = JSONUtil.toBean(json, SysUser.class);
+
+        // 3.返回
+        UserInfoVo userInfoVo = new UserInfoVo();
+        BeanUtil.copyProperties(sysUser, userInfoVo);
+        return userInfoVo;
+    }
+
+    @Override
+    public void logout(String token) {
+        redisTemplate.delete(RedisConstant.USER_LOGIN_TOKEN + token);
+    }
+
+    @Override
+    public PageVo<SysUserVo> userListPage(SysUserDto sysUserDto) {
+        Integer status = sysUserDto.getStatus();
+        String createTimeBegin = sysUserDto.getCreateTimeBegin();
+        String createTimeEnd = sysUserDto.getCreateTimeEnd();
+        String keywords = sysUserDto.getKeywords();
+
+        Page<SysUser> p = sysUserDto.toMpPageDefaultSortByUpdateTimeDesc();
+
+        Page<SysUser> page = lambdaQuery()
+                .eq(status != null, SysUser::getStatus, status)
+                .between(StrUtil.isNotBlank(createTimeBegin) && StrUtil.isNotBlank(createTimeEnd),
+                        SysUser::getCreateTime, createTimeBegin, createTimeEnd)
+                .and(StrUtil.isNotBlank(keywords), wrapper -> wrapper
+                        .like(SysUser::getName, keywords)
+                        .or()
+                        .like(SysUser::getPhone, keywords))
+                .page(p);
+
+        return PageVo.of(page, SysUserVo.class);
     }
 }
 

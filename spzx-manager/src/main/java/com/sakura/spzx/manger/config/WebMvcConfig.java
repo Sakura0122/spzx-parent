@@ -1,7 +1,11 @@
 package com.sakura.spzx.manger.config;
 
+import com.sakura.spzx.manger.interceptor.LoginAuthInterceptor;
+import com.sakura.spzx.manger.properties.UserAuthProperties;
+import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -11,6 +15,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  */
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
+
+    @Resource
+    private UserAuthProperties userAuthProperties;
+
+    @Resource
+    private LoginAuthInterceptor loginAuthInterceptor;
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")      // 添加路径规则
@@ -19,4 +30,21 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowedMethods("*")               // 允许所有的请求方法
                 .allowedHeaders("*");              // 允许所有的请求头
     }
+
+    // TODO: 登录拦截器
+    // @Override
+    // public void addInterceptors(InterceptorRegistry registry) {
+    //     registry.addInterceptor(loginAuthInterceptor)
+    //             .addPathPatterns("/**")
+    //             .excludePathPatterns(userAuthProperties.getExcludePaths())
+    //             .excludePathPatterns(
+    //                     "/error",
+    //                     "/favicon.ico",
+    //                     "/v2/**",
+    //                     "/v3/**",
+    //                     "/swagger-resources/**",
+    //                     "/webjars/**",
+    //                     "/doc.html"
+    //             );
+    // }
 }

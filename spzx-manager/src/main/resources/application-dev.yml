@@ -41,3 +41,10 @@ sa-token:
   token-style: uuid
   # 是否输出操作日志
   is-log: true
+
+# 自定义配置
+spzx:
+  auth:
+    excludePaths:
+      - /admin/user/login
+      - /admin/user/validateCode
