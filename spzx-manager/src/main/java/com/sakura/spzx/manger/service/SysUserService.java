@@ -1,7 +1,7 @@
 package com.sakura.spzx.manger.service;
 
 import com.sakura.spzx.model.dto.system.LoginDto;
-import com.sakura.spzx.model.dto.system.SysUserDto;
+import com.sakura.spzx.model.dto.system.SysUserQueryDto;
 import com.sakura.spzx.model.entity.system.SysUser;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.sakura.spzx.model.vo.common.PageVo;
@@ -9,7 +9,6 @@ import com.sakura.spzx.model.vo.system.LoginVo;
 import com.sakura.spzx.model.vo.system.SysUserVo;
 import com.sakura.spzx.model.vo.system.UserInfoVo;
 import com.sakura.spzx.model.vo.system.ValidateCodeVo;
-import jakarta.validation.constraints.Null;
 
 /**
 * @author sakura
@@ -46,8 +45,8 @@ public interface SysUserService extends IService<SysUser> {
 
     /**
      * 分页查询用户列表
-     * @param sysUserDto 分页参数
+     * @param sysUserQueryDto 分页参数
      * @return 用户列表
      */
-    PageVo<SysUserVo> userListPage(SysUserDto sysUserDto);
+    PageVo<SysUserVo> userListPage(SysUserQueryDto sysUserQueryDto);
 }

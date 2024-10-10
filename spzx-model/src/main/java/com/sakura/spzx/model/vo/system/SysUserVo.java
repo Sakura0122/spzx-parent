@@ -13,6 +13,10 @@ import java.util.Date;
 @Data
 @Schema(description = "用户信息")
 public class SysUserVo {
+
+    @Schema(description = "用户ID")
+    private Long id;
+
     @Schema(description = "姓名")
     private String name;
 

@@ -2,7 +2,7 @@ package com.sakura.spzx.manger.controller;
 
 import com.sakura.spzx.manger.service.SysUserService;
 import com.sakura.spzx.model.dto.system.LoginDto;
-import com.sakura.spzx.model.dto.system.SysUserDto;
+import com.sakura.spzx.model.dto.system.SysUserQueryDto;
 import com.sakura.spzx.model.vo.common.PageVo;
 import com.sakura.spzx.model.vo.common.Result;
 import com.sakura.spzx.model.vo.system.LoginVo;
@@ -58,8 +58,8 @@ public class UserController {
 
     @PostMapping("/page")
     @Operation(summary = "分页查询用户列表")
-    public Result<PageVo<SysUserVo>> userListPage(@RequestBody @Validated SysUserDto sysUserDto) {
-        System.out.println("状态" + sysUserDto.getStatus());
-        return Result.success(sysUserService.userListPage(sysUserDto));
+    public Result<PageVo<SysUserVo>> userListPage(@RequestBody @Validated SysUserQueryDto sysUserQueryDto) {
+        System.out.println("状态" + sysUserQueryDto.getStatus());
+        return Result.success(sysUserService.userListPage(sysUserQueryDto));
     }
 }

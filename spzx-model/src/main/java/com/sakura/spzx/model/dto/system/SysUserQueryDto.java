@@ -8,7 +8,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @Schema(description = "请求参数实体类")
 @EqualsAndHashCode(callSuper = true)
-public class SysUserDto extends PageDto {
+public class SysUserQueryDto extends PageDto {
 
     @Schema(description = "搜索关键字")
     private String keywords;

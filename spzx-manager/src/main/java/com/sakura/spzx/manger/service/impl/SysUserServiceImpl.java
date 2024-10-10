@@ -2,20 +2,16 @@ package com.sakura.spzx.manger.service.impl;
 
 import cn.hutool.captcha.CaptchaUtil;
 import cn.hutool.captcha.LineCaptcha;
-import cn.hutool.captcha.ShearCaptcha;
 import cn.hutool.captcha.generator.RandomGenerator;
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.sakura.spzx.model.dto.system.SysUserDto;
+import com.sakura.spzx.model.dto.system.SysUserQueryDto;
 import com.sakura.spzx.model.vo.common.PageVo;
 import com.sakura.spzx.model.vo.system.SysUserVo;
 import com.sakura.spzx.model.vo.system.UserInfoVo;
@@ -33,8 +29,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -137,14 +131,17 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
-    public PageVo<SysUserVo> userListPage(SysUserDto sysUserDto) {
-        Integer status = sysUserDto.getStatus();
-        String createTimeBegin = sysUserDto.getCreateTimeBegin();
-        String createTimeEnd = sysUserDto.getCreateTimeEnd();
-        String keywords = sysUserDto.getKeywords();
+    public PageVo<SysUserVo> userListPage(SysUserQueryDto sysUserQueryDto) {
+        // 1. 获取参数
+        Integer status = sysUserQueryDto.getStatus();
+        String createTimeBegin = sysUserQueryDto.getCreateTimeBegin();
+        String createTimeEnd = sysUserQueryDto.getCreateTimeEnd();
+        String keywords = sysUserQueryDto.getKeywords();
 
-        Page<SysUser> p = sysUserDto.toMpPageDefaultSortByUpdateTimeDesc();
+        // 2. 获取分页查询条件
+        Page<SysUser> p = sysUserQueryDto.toMpPageDefaultSortByUpdateTimeDesc();
 
+        // 3.查询
         Page<SysUser> page = lambdaQuery()
                 .eq(status != null, SysUser::getStatus, status)
                 .between(StrUtil.isNotBlank(createTimeBegin) && StrUtil.isNotBlank(createTimeEnd),
@@ -155,6 +152,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                         .like(SysUser::getPhone, keywords))
                 .page(p);
 
+        // 4.返回数据
         return PageVo.of(page, SysUserVo.class);
     }
 }
